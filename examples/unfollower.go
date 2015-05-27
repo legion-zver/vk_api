@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sisteamnik/vk_api"
+	"github.com/yanple/vk_api"
 	"log"
 )
 
@@ -24,7 +24,10 @@ func main() {
 	params := make(map[string]string)
 	params["out"] = "1"
 
-	strResp := api.Request("friends.getRequests", params)
+	strResp, err := api.Request("friends.getRequests", params)
+    if err != nil {
+        panic(err)
+    }
 	if strResp != "" {
 		log.Println(strResp)
 	}
