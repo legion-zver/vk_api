@@ -17,6 +17,7 @@ import (
 const API_METHOD_URL = "https://api.vk.com/method/"
 const AUTH_HOST = "https://oauth.vk.com/authorize"
 const AUTH_HOST_GET_TOKEN = "https://oauth.vk.com/access_token"
+const API_VERSION = "5.62"
 
 type Api struct {
     AccessToken string
@@ -60,7 +61,7 @@ func parse_form(doc *goquery.Document) (url.Values, string, error) {
     formData := url.Values{}
     formData.Add("_origin", _origin)
     formData.Add("ip_h", ip_h)
-    formData.Add("to", to)
+    formData.Add("to", to)    
 
     url, exists := doc.Find("#vk_wrap #m #mcont .pcont .form_item form").Attr("action")
     if exists == false {
@@ -70,9 +71,9 @@ func parse_form(doc *goquery.Document) (url.Values, string, error) {
 }
 
 func auth_user(email string, password string, client_id string, scope string, client *http.Client) (*http.Response, error) {
-    var auth_url = "http://oauth.vk.com/oauth/authorize?" +
-    "redirect_uri=http://oauth.vk.com/blank.html&response_type=token&" +
-    "client_id=" + client_id + "&v=5.0&scope=" + scope + "&display=wap"
+    var auth_url = AUTH_HOST+"?" +
+    "redirect_uri=https://oauth.vk.com/blank.html&response_type=token&" +
+    "client_id=" + client_id + "&v="+API_VERSION+"&scope=" + scope + "&display=wap"
 
     res, e := client.Get(auth_url)
     if e != nil {
@@ -89,7 +90,7 @@ func auth_user(email string, password string, client_id string, scope string, cl
         return nil, err
     }
     formData.Add("email", email)
-    formData.Add("pass", password)
+    formData.Add("pass", password)    
 
     res, e = client.PostForm(url, formData)
     if e != nil {
@@ -127,6 +128,7 @@ func (vk *Api) Request(methodName string, params map[string]string) (string, err
         q.Set(k, v)
     }
     q.Set("access_token", vk.AccessToken)
+    q.Set("v", API_VERSION)
     u.RawQuery = q.Encode()
 
     resp, err := http.Get(u.String())
@@ -193,6 +195,7 @@ func (vk *Api) GetAuthUrl(redirect_uri string, client_id string, scope string) (
     }
 
     q := u.Query()
+    q.Set("v", API_VERSION)
     q.Set("client_id", client_id)
     q.Set("scope", scope)
     q.Set("redirect_uri", redirect_uri)
@@ -203,12 +206,11 @@ func (vk *Api) GetAuthUrl(redirect_uri string, client_id string, scope string) (
 }
 
 type OAuthResponse struct {
-    AccessToken         string `json:"access_token"`
-    ExpiresIn           int `json:"expires_in"`
-    UserId              int `json:"user_id"`
-
-    Error               string `json:"error"`
-    ErrorDescription    string `json:"error_description"`
+    AccessToken         string  `json:"access_token"`
+    ExpiresIn           int     `json:"expires_in"`
+    UserId              int     `json:"user_id"`
+    Error               string  `json:"error"`
+    ErrorDescription    string  `json:"error_description"`
 }
 
 func parse_oauth_response(response []byte) (OAuthResponse, error) {
@@ -224,8 +226,8 @@ func (vk *Api) OAuth(redirect_uri string, client_secret string, client_id string
     if err != nil {
         return err
     }
-
     q := u.Query()
+    q.Set("v", API_VERSION)
     q.Set("redirect_uri", redirect_uri)
     q.Set("client_secret", client_secret)
     q.Set("client_id", client_id)
